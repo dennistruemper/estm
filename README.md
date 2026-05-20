@@ -2,6 +2,8 @@
 
 **ESTM** is pronounced like *esteem*. The name stands for **external short-term memory**: the idea that your clipboard holds the small pieces you are juggling right now—snippets you still need—but outside your head, so you can switch tasks without losing them.
 
+> **Disclaimer** — Much of this project was written with AI assistance. It is an early prototype, not audited for security or reliability. ESTM reads and stores your clipboard contents locally and requires Accessibility access to automate paste. **Use at your own risk.** Do not use it for secrets you cannot afford to expose, and review the code yourself before trusting it with sensitive data.
+
 ## Status (v0.1 prototype)
 
 **Tauri v2 + Vite + Svelte 5 + TypeScript** clipboard manager. Plaintext history works end-to-end; several v1 checklist items are still open (see [Not yet](#not-yet)).
@@ -65,6 +67,18 @@ npm run tauri build  # release .app bundle
 | Workflow | When | What |
 |----------|------|------|
 | [ci.yml](.github/workflows/ci.yml) | Every **pull request** | `npm run build`, `cargo check`, `cargo clippy` on macOS |
-| [release-macos.yml](.github/workflows/release-macos.yml) | Push to **`release`** (or manual) | Builds unsigned **`.dmg`** (Apple Silicon); workflow **Artifact** + **GitHub Release** (`v<version>-build.<run>`) |
+| [release-macos.yml](.github/workflows/release-macos.yml) | Push to **`release`** (or manual) | Builds ad-hoc signed **`.dmg`** (Apple Silicon); workflow **Artifact** + **GitHub Release** (`v<version>-build.<run>`) |
+
+#### Installing a release build
+
+CI builds are **not notarized** (no Apple Developer ID yet). macOS may say the app is **“damaged”** (`beschädigt`) when you download it from GitHub — that is Gatekeeper + quarantine, not a broken bundle.
+
+After opening the `.dmg` and copying **ESTM.app** to Applications:
+
+```bash
+xattr -cr /Applications/ESTM.app
+```
+
+Then start it once via **right-click → Open** (not double-click). Later launches work normally. Grant **Privacy & Security → Accessibility** when prompted so the global shortcut and paste-after-pick work.
 
 Recommended editor extensions: **Tauri**, **rust-analyzer**, **Better TOML** for manifests.
