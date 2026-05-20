@@ -41,7 +41,19 @@ jobs:
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Build Tauri bundle
+        env:
+          # Ad-hoc sign so Apple Silicon can launch the app (no Developer ID yet).
+          APPLE_SIGNING_IDENTITY: "-"
         run: npm run tauri build -- --bundles dmg
+
+      - name: Verify code signature
+        run: |
+          set -euo pipefail
+          DMG=(src-tauri/target/release/bundle/dmg/*.dmg)
+          MOUNT=/tmp/estm-dmg-mount
+          hdiutil attach "${DMG[0]}" -mountpoint "$MOUNT" -nobrowse -quiet
+          codesign --verify --deep --strict "$MOUNT/ESTM.app"
+          hdiutil detach "$MOUNT" -quiet
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
