@@ -45,7 +45,7 @@ mod inner {
                 thread::sleep(Duration::from_millis(120));
 
                 let pb = NSPasteboard::generalPasteboard();
-                let count = isize::try_from(pb.changeCount()).unwrap_or(0);
+                let count = pb.changeCount();
 
                 if !seeded {
                     seeded = true;

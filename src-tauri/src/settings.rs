@@ -110,7 +110,7 @@ impl PickerHotkey {
                 s.push('⇧');
             }
             s.push_str(&key);
-            return s;
+            s
         }
 
         #[cfg(not(target_os = "macos"))]
@@ -267,7 +267,7 @@ impl HistoryLimits {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     #[serde(default)]
@@ -276,16 +276,6 @@ pub struct Settings {
     pub quick_pick_prefix: QuickPickPrefix,
     #[serde(default)]
     pub history_limits: HistoryLimits,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            picker_hotkey: PickerHotkey::default(),
-            quick_pick_prefix: QuickPickPrefix::default(),
-            history_limits: HistoryLimits::default(),
-        }
-    }
 }
 
 pub fn settings_path() -> PathBuf {
