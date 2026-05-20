@@ -1,0 +1,8 @@
+# Only the files listed in tauri.conf.json bundle.icon are kept in git.
+# `npm run tauri icon` generates extra Windows/iOS/Android assets — ignore them.
+/Square*.png
+/StoreLogo.png
+/icon.png
+/64x64.png
+/ios/
+/android/
