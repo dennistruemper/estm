@@ -60,4 +60,11 @@ npm run tauri dev    # Vite dev server + Rust watch
 npm run tauri build  # release .app bundle
 ```
 
+### CI
+
+| Workflow | When | What |
+|----------|------|------|
+| [ci.yml](.github/workflows/ci.yml) | Every **pull request** | `npm run build`, `cargo check`, `cargo clippy` on macOS |
+| [release-macos.yml](.github/workflows/release-macos.yml) | Push to **`release`** (or manual) | Builds unsigned **`.dmg`** (Apple Silicon); workflow **Artifact** + **GitHub Release** (`v<version>-build.<run>`) |
+
 Recommended editor extensions: **Tauri**, **rust-analyzer**, **Better TOML** for manifests.

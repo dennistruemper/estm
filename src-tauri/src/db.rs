@@ -38,7 +38,7 @@ pub fn now_ms() -> i64 {
 
 #[inline]
 pub fn fingerprint_plaintext(raw: &str) -> String {
-    raw.trim().split_whitespace().collect::<Vec<_>>().join(" ")
+    raw.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 pub fn sqlite_path() -> PathBuf {
@@ -193,7 +193,7 @@ pub fn list_recent(conn: &Connection, limit: i64) -> rusqlite::Result<Vec<ClipRo
     let mut rows = stmt.query(params![limit])?;
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
-        out.push(read_clip_row(&row)?);
+        out.push(read_clip_row(row)?);
     }
     Ok(out)
 }
@@ -224,7 +224,7 @@ pub fn search(conn: &Connection, query: &str, limit: i64) -> rusqlite::Result<Ve
     let mut rows = stmt.query(params![pattern, limit])?;
     let mut out = Vec::new();
     while let Some(row) = rows.next()? {
-        out.push(read_clip_row(&row)?);
+        out.push(read_clip_row(row)?);
     }
     Ok(out)
 }

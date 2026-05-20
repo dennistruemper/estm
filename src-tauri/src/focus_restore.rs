@@ -45,7 +45,7 @@ mod macos {
         let pid = app.processIdentifier();
         if pid >= 0 {
             if let Ok(mut slot) = state.0.lock() {
-                *slot = Some(pid as i32);
+                *slot = Some(pid);
             }
         }
     }
