@@ -24,6 +24,21 @@ fn lock_db(store: &SharedDb) -> Result<std::sync::MutexGuard<'_, Connection>, St
         .map_err(|_| "clipboard database mutex poisoned".to_string())
 }
 
+fn notify_clips_updated<R: Runtime>(app: &AppHandle<R>) {
+    let _ = app.emit("clips-updated", serde_json::Value::Null);
+}
+
+fn show_picker_window<R: Runtime>(app: &AppHandle<R>) {
+    let Some(win) = app.get_webview_window("main") else {
+        return;
+    };
+    focus_restore::capture_previous_front_app(app);
+    let _ = win.show();
+    let _ = win.unminimize();
+    let _ = win.set_focus();
+    notify_clips_updated(app);
+}
+
 fn toggle_picker_window<R: Runtime>(app: &AppHandle<R>) {
     let Some(win) = app.get_webview_window("main") else {
         return;
@@ -32,21 +47,12 @@ fn toggle_picker_window<R: Runtime>(app: &AppHandle<R>) {
     if visible {
         let _ = hide_picker_window(app, false);
     } else {
-        focus_restore::capture_previous_front_app(app);
-        let _ = win.show();
-        let _ = win.unminimize();
-        let _ = win.set_focus();
+        show_picker_window(app);
     }
 }
 
 fn present_picker_window<R: Runtime>(app: &AppHandle<R>) {
-    let Some(win) = app.get_webview_window("main") else {
-        return;
-    };
-    focus_restore::capture_previous_front_app(app);
-    let _ = win.show();
-    let _ = win.unminimize();
-    let _ = win.set_focus();
+    show_picker_window(app);
 }
 
 fn hide_picker_window<R: Runtime>(app: &AppHandle<R>, paste: bool) -> Result<(), String> {

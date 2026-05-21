@@ -49,6 +49,13 @@
     labeled: clips.filter((c) => clipHasLabel(c)).length,
   });
 
+  function sortByRecency(a: ClipRow, b: ClipRow): number {
+    if (b.createdMs !== a.createdMs) {
+      return b.createdMs - a.createdMs;
+    }
+    return b.id - a.id;
+  }
+
   function clipsForListView(rows: ClipRow[], mode: ListView): ClipRow[] {
     if (mode === "pinned") {
       return rows.filter((c) => c.pinned);
@@ -56,7 +63,8 @@
     if (mode === "labeled") {
       return rows.filter((c) => clipHasLabel(c));
     }
-    return rows;
+    // All: chronological only — pinned clips are not grouped at the top.
+    return [...rows].sort(sortByRecency);
   }
 
   function clipAtIndex(idx: number): ClipRow | undefined {
