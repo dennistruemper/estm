@@ -24,22 +24,11 @@ fn lock_db(store: &SharedDb) -> Result<std::sync::MutexGuard<'_, Connection>, St
         .map_err(|_| "clipboard database mutex poisoned".to_string())
 }
 
-fn toggle_picker_window<R: Runtime>(app: &AppHandle<R>) {
-    let Some(win) = app.get_webview_window("main") else {
-        return;
-    };
-    let visible = win.is_visible().unwrap_or(true);
-    if visible {
-        let _ = hide_picker_window(app, false);
-    } else {
-        focus_restore::capture_previous_front_app(app);
-        let _ = win.show();
-        let _ = win.unminimize();
-        let _ = win.set_focus();
-    }
+fn notify_clips_updated<R: Runtime>(app: &AppHandle<R>) {
+    let _ = app.emit("clips-updated", serde_json::Value::Null);
 }
 
-fn present_picker_window<R: Runtime>(app: &AppHandle<R>) {
+fn show_picker_window<R: Runtime>(app: &AppHandle<R>) {
     let Some(win) = app.get_webview_window("main") else {
         return;
     };
@@ -47,14 +36,31 @@ fn present_picker_window<R: Runtime>(app: &AppHandle<R>) {
     let _ = win.show();
     let _ = win.unminimize();
     let _ = win.set_focus();
+    notify_clips_updated(app);
 }
 
-fn hide_picker_window<R: Runtime>(app: &AppHandle<R>, paste: bool) -> Result<(), String> {
+fn toggle_picker_window<R: Runtime>(app: &AppHandle<R>) {
+    let Some(win) = app.get_webview_window("main") else {
+        return;
+    };
+    let visible = win.is_visible().unwrap_or(true);
+    if visible {
+        let _ = hide_picker_window(app);
+    } else {
+        show_picker_window(app);
+    }
+}
+
+fn present_picker_window<R: Runtime>(app: &AppHandle<R>) {
+    show_picker_window(app);
+}
+
+fn hide_picker_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let Some(win) = app.get_webview_window("main") else {
         return Ok(());
     };
     win.hide().map_err(|e| e.to_string())?;
-    focus_restore::restore_previous_front_app(app, paste);
+    focus_restore::restore_previous_front_app(app);
     Ok(())
 }
 
@@ -101,8 +107,8 @@ fn install_desktop_shell<R: Runtime>(handle: &AppHandle<R>) -> Result<(), String
 }
 
 #[tauri::command]
-fn picker_hide<R: Runtime>(app: AppHandle<R>, paste: Option<bool>) -> Result<(), String> {
-    hide_picker_window(&app, paste.unwrap_or(false))
+fn picker_hide<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    hide_picker_window(&app)
 }
 
 #[tauri::command]

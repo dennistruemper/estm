@@ -16,6 +16,10 @@ mod macos {
     };
     use objc2_foundation::NSString;
     use std::ffi::CStr;
+    use std::time::Duration;
+    use tauri::{AppHandle, Runtime};
+
+    const HIDE_SETTLE_MS: u64 = 40;
 
     fn ns_string_to_string(ns: &NSString) -> Option<String> {
         unsafe {
@@ -50,7 +54,15 @@ mod macos {
         }
     }
 
-    pub fn restore(state: &PreviousFrontApp) {
+    fn activate_pid(pid: i32) -> bool {
+        let Some(app) = NSRunningApplication::runningApplicationWithProcessIdentifier(pid) else {
+            return false;
+        };
+        let options = NSApplicationActivationOptions::ActivateAllWindows;
+        app.activateWithOptions(options)
+    }
+
+    pub fn restore<R: Runtime>(app: &AppHandle<R>, state: &PreviousFrontApp) {
         let pid = match state.0.lock() {
             Ok(mut slot) => slot.take(),
             Err(_) => return,
@@ -58,30 +70,14 @@ mod macos {
         let Some(pid) = pid else {
             return;
         };
-        let Some(app) = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)
-        else {
-            return;
-        };
-        let options = NSApplicationActivationOptions::ActivateAllWindows;
-        let _ = app.activateWithOptions(options);
-    }
 
-    pub fn schedule_paste() {
-        std::thread::spawn(|| {
-            std::thread::sleep(std::time::Duration::from_millis(150));
-            simulate_command_v();
+        let app = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(HIDE_SETTLE_MS));
+            let _ = app.run_on_main_thread(move || {
+                let _ = activate_pid(pid);
+            });
         });
-    }
-
-    fn simulate_command_v() {
-        use enigo::{Direction, Enigo, Key, Keyboard, Settings};
-
-        let Ok(mut enigo) = Enigo::new(&Settings::default()) else {
-            return;
-        };
-        let _ = enigo.key(Key::Meta, Direction::Press);
-        let _ = enigo.key(Key::Unicode('v'), Direction::Click);
-        let _ = enigo.key(Key::Meta, Direction::Release);
     }
 }
 
@@ -96,14 +92,11 @@ pub fn capture_previous_front_app<R: Runtime>(app: &AppHandle<R>) {
 pub fn capture_previous_front_app<R: Runtime>(_app: &AppHandle<R>) {}
 
 #[cfg(target_os = "macos")]
-pub fn restore_previous_front_app<R: Runtime>(app: &AppHandle<R>, paste: bool) {
+pub fn restore_previous_front_app<R: Runtime>(app: &AppHandle<R>) {
     if let Some(state) = app.try_state::<PreviousFrontApp>() {
-        macos::restore(state.inner());
-        if paste {
-            macos::schedule_paste();
-        }
+        macos::restore(app, state.inner());
     }
 }
 
 #[cfg(not(target_os = "macos"))]
-pub fn restore_previous_front_app<R: Runtime>(_app: &AppHandle<R>, _paste: bool) {}
+pub fn restore_previous_front_app<R: Runtime>(_app: &AppHandle<R>) {}

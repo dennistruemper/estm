@@ -1,4 +1,5 @@
-//! Polls system clipboard change count on macOS; inactive elsewhere.
+//! Polls the system clipboard for new plaintext (macOS: arboard + fingerprint tracking).
+
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
@@ -13,6 +14,8 @@ mod inner {
     use std::{ffi::CStr, thread, time::Duration};
     use tauri::{AppHandle, Emitter};
 
+    const POLL_MS: u64 = 120;
+
     #[inline]
     fn nsstring_utf8(ns: &NSString) -> Option<String> {
         unsafe {
@@ -24,61 +27,74 @@ mod inner {
         }
     }
 
-    fn pasteboard_plaintext() -> Option<String> {
+    fn pasteboard_plaintext_ns() -> Option<String> {
         let pb = NSPasteboard::generalPasteboard();
-        let s_ret = pb.stringForType(ns_string!("public.utf8-plain-text"));
-        let ns = s_ret.as_deref()?;
-        let rust = nsstring_utf8(ns)?;
-        if rust.is_empty() {
+        for ty in [
+            ns_string!("NSStringPboardType"),
+            ns_string!("public.utf8-plain-text"),
+            ns_string!("public.plain-text"),
+        ] {
+            let Some(ns) = pb.stringForType(ty) else {
+                continue;
+            };
+            let rust = nsstring_utf8(&ns)?;
+            if !rust.is_empty() {
+                return Some(rust);
+            }
+        }
+        None
+    }
+
+    fn read_plaintext() -> Option<String> {
+        if let Some(t) = pasteboard_plaintext_ns() {
+            return Some(t);
+        }
+        let mut cb = arboard::Clipboard::new().ok()?;
+        let t = cb.get_text().ok()?;
+        if t.is_empty() {
             None
         } else {
-            Some(rust)
+            Some(t)
         }
+    }
+
+    fn ingest(db: &SharedDb, txt: String) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        let conn = db.lock().map_err(|_| "db mutex poisoned")?;
+        let limits = crate::settings::load().history_limits.to_db_limits();
+        Ok(db::record_plaintext_capture(&conn, txt, limits)?)
     }
 
     pub fn spawn(app: AppHandle, db: SharedDb, skip_own_clipboard_writes: Arc<AtomicBool>) {
         thread::spawn(move || {
-            let mut seeded = false;
-            let mut last_count: isize = 0;
+            let mut last_fp: Option<String> = None;
+            if let Some(t) = read_plaintext() {
+                last_fp = Some(db::fingerprint_plaintext(&t));
+            }
 
             loop {
-                thread::sleep(Duration::from_millis(120));
-
-                let pb = NSPasteboard::generalPasteboard();
-                let count = pb.changeCount();
-
-                if !seeded {
-                    seeded = true;
-                    last_count = count;
-                    continue;
-                }
-
-                if count == last_count {
-                    continue;
-                }
-                last_count = count;
+                thread::sleep(Duration::from_millis(POLL_MS));
 
                 if skip_own_clipboard_writes.swap(false, Ordering::SeqCst) {
+                    if let Some(t) = read_plaintext() {
+                        last_fp = Some(db::fingerprint_plaintext(&t));
+                    }
                     continue;
                 }
 
-                let Some(txt) = pasteboard_plaintext() else {
+                let Some(txt) = read_plaintext() else {
                     continue;
                 };
 
-                let outcome = match db.lock() {
-                    Ok(conn) => {
-                        let limits = crate::settings::load().history_limits.to_db_limits();
-                        db::record_plaintext_capture(&conn, txt, limits)
-                    }
-                    Err(_) => {
-                        eprintln!("[ESTM] db mutex poisoned");
-                        thread::sleep(Duration::from_secs(1));
-                        continue;
-                    }
-                };
+                let fp = db::fingerprint_plaintext(&txt);
+                if fp.is_empty() {
+                    continue;
+                }
+                if last_fp.as_ref() == Some(&fp) {
+                    continue;
+                }
+                last_fp = Some(fp);
 
-                match outcome {
+                match ingest(&db, txt) {
                     Ok(true) => {
                         let _ = app.emit("clips-updated", serde_json::Value::Null);
                     }
