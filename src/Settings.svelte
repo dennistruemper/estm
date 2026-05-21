@@ -18,6 +18,8 @@
     historyMaxEntries: number;
     historyUseMaxAge: boolean;
     historyMaxAgeDays: number;
+    appVersion: string;
+    buildTimestamp: string;
   };
 
   type Props = {
@@ -42,6 +44,8 @@
   let saving = $state(false);
   let clearing = $state(false);
   let errorText = $state("");
+  let appVersion = $state("…");
+  let buildTimestamp = $state("…");
 
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -64,6 +68,8 @@
     historyMaxEntries = snap.historyMaxEntries;
     historyUseMaxAge = snap.historyUseMaxAge;
     historyMaxAgeDays = snap.historyMaxAgeDays;
+    appVersion = snap.appVersion;
+    buildTimestamp = snap.buildTimestamp;
     onHotkeyChange?.(snap.activeLabel);
     onSettingsChange?.(snap);
   }
@@ -374,5 +380,12 @@
         Deletes all clips and pins from this Mac. Cannot be undone.
       </p>
     </div>
+  </div>
+
+  <div class="settings-card">
+    <p class="setting-label">Build</p>
+    <p class="setting-desc setting-desc--mono">
+      v{appVersion} · {buildTimestamp}
+    </p>
   </div>
 </section>

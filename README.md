@@ -2,7 +2,7 @@
 
 **ESTM** is pronounced like *esteem*. The name stands for **external short-term memory**: the idea that your clipboard holds the small pieces you are juggling right now—snippets you still need—but outside your head, so you can switch tasks without losing them.
 
-> **Disclaimer** — Much of this project was written with AI assistance. It is an early prototype, not audited for security or reliability. ESTM reads and stores your clipboard contents locally and requires Accessibility access to automate paste. **Use at your own risk.** Do not use it for secrets you cannot afford to expose, and review the code yourself before trusting it with sensitive data.
+> **Disclaimer** — Much of this project was written with AI assistance. It is an early prototype, not audited for security or reliability. ESTM reads and stores your clipboard contents locally. **Use at your own risk.** Do not use it for secrets you cannot afford to expose, and review the code yourself before trusting it with sensitive data.
 
 ## Status (v0.1 prototype)
 
@@ -14,7 +14,7 @@
 |------|----------------|
 | **History** | SQLite-backed plaintext clips; background `NSPasteboard` watcher; consecutive duplicate suppression (normalized fingerprint). Data under `~/Library/Application Support/fun.estm.ESTM/` (`estm.sqlite`, `settings.json`). |
 | **Quick picker** | Compact window with type-to-filter search; global shortcut **toggles** show/hide (default **⌘⇧E**, configurable in Settings). |
-| **Pick & paste** | Choosing a clip copies to the system clipboard, hides the picker, restores the previous frontmost app, then simulates **⌘V** (~150 ms later). **Enter** or row click: copy + hide + paste. **Shift+Enter**: copy and keep the picker open (no paste). |
+| **Pick & refocus** | Choosing a clip copies to the system clipboard, hides the picker, and restores the previous frontmost app — you press **⌘V** to paste. **Enter** or row click: copy + hide + refocus. **Shift+Enter**: copy and keep the picker open. |
 | **Menu bar** | Tray icon → **Open picker…**; **Quit**. No “recent clips” submenu yet. |
 | **Retention** | Settings: max entry count (default **500**), optional max age in days for **unpinned** clips (default **14**), or count-only (age off). Pinned clips are exempt from age eviction. **Clear history** in Settings. |
 | **Pins & labels** | Pin/unpin per row; optional label (search matches label + body; labels do not auto-pin). **Pinned · All · Labeled** views with **←/→** from the filter. |
@@ -31,7 +31,7 @@ Checklist reference (item **8** omitted by design):
 |---|---------|--------|
 | 1 | History | ✅ Plaintext |
 | 2 | Quick picker | ✅ |
-| 3 | Paste without app switching | ✅ |
+| 3 | Paste without app switching | ✅ Copy + refocus; you **⌘V** (no synthetic paste) |
 | 4 | Menu bar |  Icon + open/quit only |
 | 5 | Persistence rules | ✅ Configurable |
 | 7 | Pin / favorites | ✅ |
@@ -42,7 +42,7 @@ Checklist reference (item **8** omitted by design):
 
 ### Permissions
 
-Grant **System Settings → Privacy & Security → Accessibility** for ESTM so the global picker shortcut, focus restore, and simulated **⌘V** after a pick work reliably.
+Grant **System Settings → Privacy & Security → Accessibility** for ESTM if the global picker shortcut requires it on your macOS version. Picking a clip does **not** simulate **⌘V** — only clipboard + refocus.
 
 ---
 
@@ -79,6 +79,6 @@ After opening the `.dmg` and copying **ESTM.app** to Applications:
 xattr -cr /Applications/ESTM.app
 ```
 
-Then start it once via **right-click → Open** (not double-click). Later launches work normally. Grant **Privacy & Security → Accessibility** when prompted so the global shortcut and paste-after-pick work.
+Then start it once via **right-click → Open** (not double-click). Later launches work normally. Grant **Privacy & Security → Accessibility** when prompted if needed for the global shortcut.
 
 Recommended editor extensions: **Tauri**, **rust-analyzer**, **Better TOML** for manifests.
