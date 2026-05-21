@@ -369,6 +369,8 @@ pub struct SettingsSnapshot {
     pub history_max_entries: u32,
     pub history_use_max_age: bool,
     pub history_max_age_days: u32,
+    pub app_version: String,
+    pub build_timestamp: String,
 }
 
 pub fn snapshot() -> SettingsSnapshot {
@@ -381,6 +383,8 @@ pub fn snapshot() -> SettingsSnapshot {
         history_max_entries: cfg.history_limits.max_entries,
         history_use_max_age: cfg.history_limits.use_max_age,
         history_max_age_days: cfg.history_limits.max_age_days,
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
+        build_timestamp: env!("ESTM_BUILD_TIMESTAMP").to_string(),
     }
 }
 
