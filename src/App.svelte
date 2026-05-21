@@ -300,9 +300,9 @@
     row?.scrollIntoView({ block: "nearest" });
   }
 
-  async function hidePicker(opts?: { paste?: boolean }): Promise<void> {
+  async function hidePicker(): Promise<void> {
     try {
-      await invoke("picker_hide", { paste: opts?.paste ?? false });
+      await invoke("picker_hide");
     } catch {
       /* picker_hide unavailable outside Tauri */
     }
@@ -323,7 +323,8 @@
     try {
       await invoke("clips_copy", { id: clip.id });
       if (opts?.keepPickerOpen !== true) {
-        await hidePicker({ paste: true });
+        await hidePicker();
+        flashHint(isMac ? "Copied — press ⌘V to paste" : "Copied — press Ctrl+V to paste");
         return true;
       }
       flashHint(`Copied #${clip.id} (${clip.plaintext.length} chars)`);
@@ -857,9 +858,9 @@
               </p>
               <p>
                 <kbd>Enter</kbd>
-                copies, hides picker, refocuses previous app, and pastes (macOS) ·
-                <kbd>Shift</kbd>+<kbd>Enter</kbd>
-                copy and keep picker open
+                copies, hides picker, refocuses previous app (press <kbd>⌘V</kbd>
+                to paste) · <kbd>Shift</kbd>+<kbd>Enter</kbd> copy and keep picker
+                open
               </p>
               <p>
                 <kbd>1</kbd>…<kbd>9</kbd>
